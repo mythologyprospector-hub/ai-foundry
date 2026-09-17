@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -63,8 +64,8 @@ class ArtifactStore:
             run = Run(
                 run_id=str(data["run_id"]),
                 experiment_id=str(data["experiment_id"]),
-                started_at=__import__("datetime").datetime.fromisoformat(data["started_at"]),
-                finished_at=__import__("datetime").datetime.fromisoformat(data["finished_at"]),
+                started_at=datetime.fromisoformat(data["started_at"]),
+                finished_at=datetime.fromisoformat(data["finished_at"]),
                 configuration=dict(data.get("configuration", {})),
                 provenance=dict(data.get("provenance", {})),
             )
