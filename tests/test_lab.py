@@ -44,3 +44,26 @@ def test_evaluator_applies_explicit_test(tmp_path: Path):
     )
 
     assert evaluation.passed is True
+
+
+def test_preserved_experiment_can_be_reloaded_and_run_again(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+    original = Experiment(
+        experiment_id="reproducible",
+        model="fake-model",
+        prompt="Repeat this.",
+        parameters={"temperature": 0, "seed": 42},
+        metadata={"purpose": "reproduction test"},
+    )
+
+    first_run, first_result = lab.run(original)
+    preserved = store.load_experiment(original.experiment_id)
+    second_run, second_result = lab.run(preserved)
+
+    assert preserved == original
+    assert second_run.run_id != first_run.run_id
+    assert second_run.experiment_id == original.experiment_id
+    assert second_result.run_id == second_run.run_id
+    assert second_result.output == first_result.output
+    assert second_run.configuration == first_run.configuration
