@@ -1,0 +1,56 @@
+"""Small, inspectable contracts for the first laboratory loop."""
+
+from __future__ import annotations
+
+from dataclasses import asdict, dataclass, field
+from datetime import datetime, timezone
+from typing import Any, Mapping
+
+
+def utc_now() -> datetime:
+    """Return a timezone-aware UTC timestamp."""
+    return datetime.now(timezone.utc)
+
+
+@dataclass(frozen=True)
+class Experiment:
+    """A reproducible definition of one AI experiment."""
+
+    experiment_id: str
+    model: str
+    prompt: str
+    parameters: Mapping[str, Any] = field(default_factory=dict)
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class Run:
+    """The execution record connecting an experiment to a result."""
+
+    run_id: str
+    experiment_id: str
+    started_at: datetime
+    finished_at: datetime
+    configuration: Mapping[str, Any]
+    provenance: Mapping[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        data = asdict(self)
+        data["started_at"] = self.started_at.isoformat()
+        data["finished_at"] = self.finished_at.isoformat()
+        return data
+
+
+@dataclass(frozen=True)
+class Result:
+    """The durable output of a run."""
+
+    run_id: str
+    output: str
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
