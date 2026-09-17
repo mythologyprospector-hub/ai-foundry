@@ -111,11 +111,13 @@ The project will favor:
 5. Explicit provenance over implicit magic.
 6. Working local capabilities before premature distributed infrastructure.
 
-## Status
+## Current Status
 
-**Early project / architecture phase.**
+**Phase 1 — First Laboratory Loop is underway.**
 
-The repository begins intentionally small. The long-term vision is broad, but implementation will proceed through verified, incremental capabilities.
+The repository now contains the first executable contracts for experiments, runs, results, evaluation, artifact persistence, and a provider-neutral runtime boundary, with automated test coverage and GitHub Actions validation being established around them.
+
+The implementation remains intentionally small. The long-term vision is broad, but capabilities will be added through verified, incremental requirements rather than speculative architecture.
 
 ## Author
 
