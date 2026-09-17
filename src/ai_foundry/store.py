@@ -19,6 +19,18 @@ class ArtifactStore:
     def save_experiment(self, experiment: Experiment) -> Path:
         return self._write("experiments", experiment.experiment_id, experiment.to_dict())
 
+    def load_experiment(self, experiment_id: str) -> Experiment:
+        """Load a preserved experiment definition from the artifact store."""
+        path = self.root / "experiments" / f"{experiment_id}.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return Experiment(
+            experiment_id=str(data["experiment_id"]),
+            model=str(data["model"]),
+            prompt=str(data["prompt"]),
+            parameters=dict(data.get("parameters", {})),
+            metadata=dict(data.get("metadata", {})),
+        )
+
     def save_run(self, run: Run) -> Path:
         return self._write("runs", run.run_id, run.to_dict())
 
