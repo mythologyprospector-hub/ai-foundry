@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from .contracts import Dataset, Evaluation, Experiment, Result, Run, TestCase
+from .contracts import Comparison, Dataset, Evaluation, Experiment, Result, Run, TestCase
 
 
 class ArtifactStore:
@@ -161,6 +161,40 @@ class ArtifactStore:
             if run_id is None or evaluation.run_id == run_id:
                 evaluations.append(evaluation)
         return evaluations
+
+    def save_comparison(self, comparison: Comparison) -> Path:
+        """Preserve a comparison without silently changing it."""
+        path = self.root / "comparisons" / f"{comparison.comparison_id}.json"
+        if path.exists():
+            preserved = self.load_comparison(comparison.comparison_id)
+            if preserved != comparison:
+                raise FileExistsError(
+                    f"Comparison already preserved with a different definition: "
+                    f"{comparison.comparison_id}"
+                )
+            return path
+        return self._write("comparisons", comparison.comparison_id, comparison.to_dict())
+
+    def load_comparison(self, comparison_id: str) -> Comparison:
+        """Load a preserved comparison."""
+        path = self.root / "comparisons" / f"{comparison_id}.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return Comparison(
+            comparison_id=str(data["comparison_id"]),
+            run_ids=tuple(str(run_id) for run_id in data["run_ids"]),
+            note=str(data.get("note", "")),
+            metadata=dict(data.get("metadata", {})),
+        )
+
+    def list_comparisons(self) -> list[Comparison]:
+        """Return preserved comparisons in stable identifier order."""
+        directory = self.root / "comparisons"
+        if not directory.exists():
+            return []
+        return [
+            self.load_comparison(path.stem)
+            for path in sorted(directory.glob("*.json"), key=lambda item: item.name)
+        ]
 
     def _write(self, kind: str, identifier: str, data: dict[str, Any]) -> Path:
         directory = self.root / kind
