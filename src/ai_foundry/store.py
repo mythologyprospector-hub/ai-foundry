@@ -1,4 +1,4 @@
-"""Simple filesystem persistence for experiments, runs, and results."""
+""""Simple filesystem persistence for experiments, runs, and results."""
 
 from __future__ import annotations
 
@@ -18,10 +18,21 @@ class ArtifactStore:
         self.root.mkdir(parents=True, exist_ok=True)
 
     def save_experiment(self, experiment: Experiment) -> Path:
-        """Preserve an experiment definition without silently overwriting it."""
+        """Preserve an experiment definition without silently changing it.
+
+        Re-saving the identical definition is idempotent so preserved experiments
+        can be reused for reproduction. A different definition with the same
+        identifier is rejected rather than overwriting history.
+        """
         path = self.root / "experiments" / f"{experiment.experiment_id}.json"
         if path.exists():
-            raise FileExistsError(f"Experiment already preserved: {experiment.experiment_id}")
+            preserved = self.load_experiment(experiment.experiment_id)
+            if preserved != experiment:
+                raise FileExistsError(
+                    f"Experiment already preserved with a different definition: "
+                    f"{experiment.experiment_id}"
+                )
+            return path
         return self._write("experiments", experiment.experiment_id, experiment.to_dict())
 
     def load_experiment(self, experiment_id: str) -> Experiment:
