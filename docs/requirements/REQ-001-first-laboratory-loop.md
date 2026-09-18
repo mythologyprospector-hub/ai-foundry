@@ -1,6 +1,6 @@
 # REQ-001 — First Laboratory Loop
 
-**Status:** Active
+**Status:** Complete
 **Phase:** 1 — First Laboratory Loop
 **Tracking:** GitHub Issue #1
 
@@ -48,6 +48,14 @@ AI Foundry must be able to represent a small AI experiment as explicit artifacts
 5. A basic evaluation/test can be run against the result.
 6. The experiment can be repeated from its preserved definition.
 7. Automated tests cover the implemented contracts.
+
+## Verification evidence
+
+- Local automated suite: **3 passed in 0.02s** on the reproducibility implementation branch.
+- GitHub Actions `tests` workflow for commit `72c54fb` completed successfully.
+- Live local runtime verification was executed with Ollama `0.30.6` and local model `llama3.1:8b`.
+- The live run returned the expected test response and produced experiment, run, and result artifacts.
+- Reproducibility implementation was merged to `main` as commit `b790969`.
 
 ## Implementation guidance
 

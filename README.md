@@ -113,9 +113,9 @@ The project will favor:
 
 ## Current Status
 
-**Phase 1 — First Laboratory Loop is underway.**
+**Phase 2 — Experimentation is beginning.**
 
-The repository now contains the first executable contracts for experiments, runs, results, evaluation, artifact persistence, and a provider-neutral runtime boundary, with automated test coverage and GitHub Actions validation being established around them.
+Phase 1's first laboratory loop is complete and has been verified with automated tests, GitHub Actions, and a live local Ollama run. The repository now moves into the experimentation phase, beginning with explicit experiment history and immutable artifact preservation.
 
 The implementation remains intentionally small. The long-term vision is broad, but capabilities will be added through verified, incremental requirements rather than speculative architecture.
 

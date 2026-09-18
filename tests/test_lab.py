@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from ai_foundry.contracts import Experiment
 from ai_foundry.evaluation import Evaluator
 from ai_foundry.lab import Lab
@@ -67,3 +69,44 @@ def test_preserved_experiment_can_be_reloaded_and_run_again(tmp_path: Path):
     assert second_result.run_id == second_run.run_id
     assert second_result.output == first_result.output
     assert second_run.configuration == first_run.configuration
+
+
+def test_experiment_definition_cannot_be_silently_overwritten(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    original = Experiment("immutable", "model-a", "first")
+    changed = Experiment("immutable", "model-b", "second")
+
+    store.save_experiment(original)
+
+    with pytest.raises(FileExistsError):
+        store.save_experiment(changed)
+
+    assert store.load_experiment("immutable") == original
+
+
+def test_experiment_history_can_be_enumerated(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    experiments = [
+        Experiment("beta", "model-b", "second"),
+        Experiment("alpha", "model-a", "first"),
+    ]
+
+    for experiment in experiments:
+        store.save_experiment(experiment)
+
+    assert store.list_experiments() == [experiments[1], experiments[0]]
+
+
+def test_repeated_runs_are_independently_preserved_and_listable(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+    experiment = Experiment("repeat", "fake-model", "run me")
+
+    first_run, _ = lab.run(experiment)
+    second_run, _ = lab.run(store.load_experiment("repeat"))
+
+    runs = store.list_runs("repeat")
+
+    assert first_run.run_id != second_run.run_id
+    assert {run.run_id for run in runs} == {first_run.run_id, second_run.run_id}
+    assert all(run.experiment_id == "repeat" for run in runs)
