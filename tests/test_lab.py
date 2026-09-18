@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from ai_foundry.contracts import Experiment
+from ai_foundry.contracts import Dataset, Experiment, TestCase
 from ai_foundry.evaluation import Evaluator
 from ai_foundry.lab import Lab
 from ai_foundry.runtime import RuntimeAdapter
@@ -110,3 +110,49 @@ def test_repeated_runs_are_independently_preserved_and_listable(tmp_path: Path):
     assert first_run.run_id != second_run.run_id
     assert {run.run_id for run in runs} == {first_run.run_id, second_run.run_id}
     assert all(run.experiment_id == "repeat" for run in runs)
+
+
+def test_dataset_preserves_explicit_test_cases(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    dataset = Dataset(
+        dataset_id="basic",
+        test_cases=(
+            TestCase("greeting", "Say hello.", expected_output="Hello."),
+            TestCase("math", "2 + 2", criteria={"exact": "4"}),
+        ),
+        metadata={"purpose": "foundation test"},
+    )
+
+    path = store.save_dataset(dataset)
+    preserved = store.load_dataset("basic")
+
+    assert path == tmp_path / "datasets/basic.json"
+    assert preserved == dataset
+    assert preserved.test_cases[0].expected_output == "Hello."
+    assert preserved.test_cases[1].criteria == {"exact": "4"}
+
+
+def test_dataset_definition_cannot_be_silently_overwritten(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    original = Dataset("immutable", (TestCase("one", "first"),))
+    changed = Dataset("immutable", (TestCase("one", "second"),))
+
+    store.save_dataset(original)
+
+    with pytest.raises(FileExistsError):
+        store.save_dataset(changed)
+
+    assert store.load_dataset("immutable") == original
+
+
+def test_dataset_history_can_be_loaded_and_enumerated(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    datasets = [
+        Dataset("beta", (TestCase("b", "second"),)),
+        Dataset("alpha", (TestCase("a", "first"),)),
+    ]
+
+    for dataset in datasets:
+        store.save_dataset(dataset)
+
+    assert store.list_datasets() == [datasets[1], datasets[0]]
