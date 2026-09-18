@@ -1,6 +1,6 @@
 # REQ-003 — Dataset and Test Case Foundation
 
-**Status:** Proposed
+**Status:** Complete
 **Phase:** 2 — Experimentation
 **Tracking:** GitHub Issue #5
 
@@ -12,7 +12,7 @@ Give AI Foundry a small, explicit way to preserve the inputs used for repeated e
 
 REQ-002 established preserved experiment and run history. The next missing piece in the Phase 2 laboratory loop is a stable input specimen: a named, inspectable dataset/test-case representation that can be reused rather than embedded ad hoc in individual calls.
 
-This requirement deliberately stops short of evaluation suites, batch orchestration, UI, or a database.
+This requirement deliberately stops short of evaluation suites, batch orchestration, UI, database-backed storage, or dataset-driven execution.
 
 ## Scope
 
@@ -20,7 +20,6 @@ This requirement deliberately stops short of evaluation suites, batch orchestrat
 - Define a minimal test-case representation within that contract.
 - Preserve datasets as human-readable local artifacts.
 - Load and enumerate preserved datasets explicitly.
-- Allow an experiment/test workflow to consume a named test case without changing the runtime adapter boundary.
 - Preserve enough dataset identity/content to support reproducible evaluation.
 - Add automated regression coverage.
 
@@ -43,6 +42,16 @@ This requirement deliberately stops short of evaluation suites, batch orchestrat
 - Reproducibility remains first-class.
 - Do not expand runtime architecture.
 - Follow established Organ communication conventions only where they apply.
+
+Dataset-driven execution is intentionally deferred. The current laboratory can preserve and retrieve test specimens without changing the existing runtime execution contract.
+
+## Verification evidence
+
+- Owner-machine verification on the REQ-003 branch: **9 passed in 0.04s**.
+- GitHub Actions `tests` workflow for commit `15e35e9` completed successfully.
+- The test collection warning caused by the domain class name `TestCase` was removed without changing production behavior.
+- PR #6 was merged to `main` as commit `b8fac9d07c26178f46d224c32e9a33cbaf2004bb`.
+- GitHub Issue #5 was closed as completed.
 
 ## Completion condition
 
