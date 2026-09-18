@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from ai_foundry.contracts import Dataset, Experiment, TestCase
+from ai_foundry.contracts import Dataset, Experiment, TestCase as DatasetTestCase
 from ai_foundry.evaluation import Evaluator
 from ai_foundry.lab import Lab
 from ai_foundry.runtime import RuntimeAdapter
@@ -117,8 +117,8 @@ def test_dataset_preserves_explicit_test_cases(tmp_path: Path):
     dataset = Dataset(
         dataset_id="basic",
         test_cases=(
-            TestCase("greeting", "Say hello.", expected_output="Hello."),
-            TestCase("math", "2 + 2", criteria={"exact": "4"}),
+            DatasetTestCase("greeting", "Say hello.", expected_output="Hello."),
+            DatasetTestCase("math", "2 + 2", criteria={"exact": "4"}),
         ),
         metadata={"purpose": "foundation test"},
     )
@@ -134,8 +134,8 @@ def test_dataset_preserves_explicit_test_cases(tmp_path: Path):
 
 def test_dataset_definition_cannot_be_silently_overwritten(tmp_path: Path):
     store = ArtifactStore(tmp_path)
-    original = Dataset("immutable", (TestCase("one", "first"),))
-    changed = Dataset("immutable", (TestCase("one", "second"),))
+    original = Dataset("immutable", (DatasetTestCase("one", "first"),))
+    changed = Dataset("immutable", (DatasetTestCase("one", "second"),))
 
     store.save_dataset(original)
 
@@ -148,8 +148,8 @@ def test_dataset_definition_cannot_be_silently_overwritten(tmp_path: Path):
 def test_dataset_history_can_be_loaded_and_enumerated(tmp_path: Path):
     store = ArtifactStore(tmp_path)
     datasets = [
-        Dataset("beta", (TestCase("b", "second"),)),
-        Dataset("alpha", (TestCase("a", "first"),)),
+        Dataset("beta", (DatasetTestCase("b", "second"),)),
+        Dataset("alpha", (DatasetTestCase("a", "first"),)),
     ]
 
     for dataset in datasets:
