@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from .contracts import Dataset, Experiment, Result, Run, TestCase
+from .contracts import Dataset, Evaluation, Experiment, Result, Run, TestCase
 
 
 class ArtifactStore:
@@ -123,6 +123,44 @@ class ArtifactStore:
             if experiment_id is None or run.experiment_id == experiment_id:
                 runs.append(run)
         return runs
+
+    def save_evaluation(self, evaluation: Evaluation) -> Path:
+        """Preserve an evaluation without silently changing it."""
+        path = self.root / "evaluations" / f"{evaluation.evaluation_id}.json"
+        if path.exists():
+            preserved = self.load_evaluation(evaluation.evaluation_id)
+            if preserved != evaluation:
+                raise FileExistsError(
+                    f"Evaluation already preserved with a different definition: "
+                    f"{evaluation.evaluation_id}"
+                )
+            return path
+        return self._write("evaluations", evaluation.evaluation_id, evaluation.to_dict())
+
+    def load_evaluation(self, evaluation_id: str) -> Evaluation:
+        """Load a preserved evaluation record."""
+        path = self.root / "evaluations" / f"{evaluation_id}.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return Evaluation(
+            evaluation_id=str(data["evaluation_id"]),
+            run_id=str(data["run_id"]),
+            name=str(data["name"]),
+            passed=bool(data["passed"]),
+            detail=str(data.get("detail", "")),
+        )
+
+    def list_evaluations(self, run_id: str | None = None) -> list[Evaluation]:
+        """Return preserved evaluations, optionally limited to one run."""
+        directory = self.root / "evaluations"
+        if not directory.exists():
+            return []
+
+        evaluations: list[Evaluation] = []
+        for path in sorted(directory.glob("*.json"), key=lambda item: item.name):
+            evaluation = self.load_evaluation(path.stem)
+            if run_id is None or evaluation.run_id == run_id:
+                evaluations.append(evaluation)
+        return evaluations
 
     def _write(self, kind: str, identifier: str, data: dict[str, Any]) -> Path:
         directory = self.root / kind
