@@ -5,16 +5,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable
 
-from .contracts import Result
-
-
-@dataclass(frozen=True)
-class Evaluation:
-    """Outcome of one test applied to a result."""
-
-    name: str
-    passed: bool
-    detail: str = ""
+from .contracts import Evaluation, Result
 
 
 class Evaluator:
@@ -27,5 +18,15 @@ class Evaluator:
         name: str,
         test: Callable[[str], bool],
         detail: str = "",
+        evaluation_id: str | None = None,
     ) -> Evaluation:
-        return Evaluation(name=name, passed=bool(test(result.output)), detail=detail)
+        """Apply one explicit test and return its inspectable evaluation."""
+        if evaluation_id is None:
+            raise ValueError("evaluation_id is required for a durable evaluation")
+        return Evaluation(
+            evaluation_id=evaluation_id,
+            run_id=result.run_id,
+            name=name,
+            passed=bool(test(result.output)),
+            detail=detail,
+        )
