@@ -1,7 +1,8 @@
 # REQ-002 — Experiment History and Immutable Artifacts
 
-**Status:** Proposed
+**Status:** Complete
 **Phase:** 2 — Experimentation
+**Tracking:** GitHub Issue #4
 
 ## Purpose
 
@@ -36,6 +37,13 @@ REQ-001 established one executable, reproducible experiment path. REQ-002 builds
 - Reproducibility remains first-class.
 - Do not expand runtime architecture.
 - Follow established Organ communication conventions only where they apply.
+
+## Verification evidence
+
+- Local automated suite on the project owner's machine: **6 passed in 0.02s**.
+- Working tree was clean after verification.
+- GitHub Actions `tests` workflow for commit `a1cd3ba` completed successfully.
+- PR #3 contains the implementation and regression coverage for immutability, repeated runs, history enumeration, and reproduction.
 
 ## Completion condition
 
