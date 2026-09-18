@@ -1,4 +1,4 @@
-""""Simple filesystem persistence for experiments, runs, and results."""
+"""Simple filesystem persistence for laboratory artifacts."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from .contracts import Experiment, Result, Run
+from .contracts import Dataset, Experiment, Result, Run, TestCase
 
 
 class ArtifactStore:
@@ -17,13 +17,53 @@ class ArtifactStore:
         self.root = Path(root)
         self.root.mkdir(parents=True, exist_ok=True)
 
-    def save_experiment(self, experiment: Experiment) -> Path:
-        """Preserve an experiment definition without silently changing it.
+    def save_dataset(self, dataset: Dataset) -> Path:
+        """Preserve a dataset; identical definitions may be reused."""
+        path = self.root / "datasets" / f"{dataset.dataset_id}.json"
+        if path.exists():
+            preserved = self.load_dataset(dataset.dataset_id)
+            if preserved != dataset:
+                raise FileExistsError(
+                    f"Dataset already preserved with a different definition: "
+                    f"{dataset.dataset_id}"
+                )
+            return path
+        return self._write("datasets", dataset.dataset_id, dataset.to_dict())
 
-        Re-saving the identical definition is idempotent so preserved experiments
-        can be reused for reproduction. A different definition with the same
-        identifier is rejected rather than overwriting history.
-        """
+    def load_dataset(self, dataset_id: str) -> Dataset:
+        """Load a preserved dataset definition."""
+        path = self.root / "datasets" / f"{dataset_id}.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return Dataset(
+            dataset_id=str(data["dataset_id"]),
+            test_cases=tuple(
+                TestCase(
+                    test_case_id=str(case["test_case_id"]),
+                    input=str(case["input"]),
+                    expected_output=(
+                        None
+                        if case.get("expected_output") is None
+                        else str(case["expected_output"])
+                    ),
+                    criteria=dict(case.get("criteria", {})),
+                )
+                for case in data["test_cases"]
+            ),
+            metadata=dict(data.get("metadata", {})),
+        )
+
+    def list_datasets(self) -> list[Dataset]:
+        """Return preserved datasets in stable identifier order."""
+        directory = self.root / "datasets"
+        if not directory.exists():
+            return []
+        return [
+            self.load_dataset(path.stem)
+            for path in sorted(directory.glob("*.json"), key=lambda item: item.name)
+        ]
+
+    def save_experiment(self, experiment: Experiment) -> Path:
+        """Preserve an experiment definition without silently changing it."""
         path = self.root / "experiments" / f"{experiment.experiment_id}.json"
         if path.exists():
             preserved = self.load_experiment(experiment.experiment_id)

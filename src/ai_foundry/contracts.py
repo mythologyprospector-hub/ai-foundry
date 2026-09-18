@@ -1,4 +1,4 @@
-"""Small, inspectable contracts for the first laboratory loop."""
+"""Small, inspectable contracts for the AI Foundry laboratory."""
 
 from __future__ import annotations
 
@@ -10,6 +10,31 @@ from typing import Any, Mapping
 def utc_now() -> datetime:
     """Return a timezone-aware UTC timestamp."""
     return datetime.now(timezone.utc)
+
+
+@dataclass(frozen=True)
+class TestCase:
+    """One explicit input specimen for an experiment or evaluation."""
+
+    test_case_id: str
+    input: str
+    expected_output: str | None = None
+    criteria: Mapping[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
+class Dataset:
+    """A named, reproducible collection of test cases."""
+
+    dataset_id: str
+    test_cases: tuple[TestCase, ...]
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
 
 
 @dataclass(frozen=True)
