@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from ai_foundry.contracts import Dataset, Experiment, TestCase as DatasetTestCase
+from ai_foundry.contracts import Dataset, Evaluation, Experiment, TestCase as DatasetTestCase
 from ai_foundry.evaluation import Evaluator
 from ai_foundry.lab import Lab
 from ai_foundry.runtime import RuntimeAdapter
@@ -43,9 +43,11 @@ def test_evaluator_applies_explicit_test(tmp_path: Path):
         result,
         name="contains-model-name",
         test=lambda output: "fake-model" in output,
+        evaluation_id="eval-1",
     )
 
     assert evaluation.passed is True
+    assert evaluation.run_id == result.run_id
 
 
 def test_preserved_experiment_can_be_reloaded_and_run_again(tmp_path: Path):
@@ -156,3 +158,47 @@ def test_dataset_history_can_be_loaded_and_enumerated(tmp_path: Path):
         store.save_dataset(dataset)
 
     assert store.list_datasets() == [datasets[1], datasets[0]]
+
+
+def test_evaluation_can_be_preserved_and_reloaded(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    evaluation = Evaluation(
+        evaluation_id="eval-001",
+        run_id="run-001",
+        name="exact-output",
+        passed=True,
+        detail="Output matched expected text.",
+    )
+
+    path = store.save_evaluation(evaluation)
+    preserved = store.load_evaluation("eval-001")
+
+    assert path == tmp_path / "evaluations/eval-001.json"
+    assert preserved == evaluation
+
+
+def test_evaluation_history_can_be_enumerated_and_filtered(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    evaluations = [
+        Evaluation("eval-beta", "run-b", "check-b", False, "failed"),
+        Evaluation("eval-alpha", "run-a", "check-a", True, "passed"),
+    ]
+
+    for evaluation in evaluations:
+        store.save_evaluation(evaluation)
+
+    assert store.list_evaluations() == [evaluations[1], evaluations[0]]
+    assert store.list_evaluations("run-a") == [evaluations[1]]
+
+
+def test_evaluation_cannot_be_silently_overwritten(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    original = Evaluation("immutable", "run-1", "check", True, "original")
+    changed = Evaluation("immutable", "run-2", "check", False, "changed")
+
+    store.save_evaluation(original)
+
+    with pytest.raises(FileExistsError):
+        store.save_evaluation(changed)
+
+    assert store.load_evaluation("immutable") == original

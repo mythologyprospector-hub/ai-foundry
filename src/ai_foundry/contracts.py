@@ -79,3 +79,17 @@ class Result:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+@dataclass(frozen=True)
+class Evaluation:
+    """A durable outcome of one explicit test applied to a result."""
+
+    evaluation_id: str
+    run_id: str
+    name: str
+    passed: bool
+    detail: str = ""
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
