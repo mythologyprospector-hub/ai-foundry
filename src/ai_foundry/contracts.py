@@ -93,3 +93,16 @@ class Evaluation:
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
+
+
+@dataclass(frozen=True)
+class Comparison:
+    """A durable selection of runs for explicit side-by-side comparison."""
+
+    comparison_id: str
+    run_ids: tuple[str, ...]
+    note: str = ""
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)

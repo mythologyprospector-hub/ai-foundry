@@ -202,3 +202,51 @@ def test_evaluation_cannot_be_silently_overwritten(tmp_path: Path):
         store.save_evaluation(changed)
 
     assert store.load_evaluation("immutable") == original
+
+
+def test_comparison_can_be_preserved_and_reloaded(tmp_path: Path):
+    from ai_foundry.contracts import Comparison
+
+    store = ArtifactStore(tmp_path)
+    comparison = Comparison(
+        comparison_id="compare-001",
+        run_ids=("run-b", "run-a"),
+        note="Compare two explicit runs.",
+        metadata={"purpose": "comparison test"},
+    )
+
+    path = store.save_comparison(comparison)
+    preserved = store.load_comparison("compare-001")
+
+    assert path == tmp_path / "comparisons/compare-001.json"
+    assert preserved == comparison
+
+
+def test_comparison_history_can_be_enumerated(tmp_path: Path):
+    from ai_foundry.contracts import Comparison
+
+    store = ArtifactStore(tmp_path)
+    comparisons = [
+        Comparison("compare-beta", ("run-b",)),
+        Comparison("compare-alpha", ("run-a", "run-b")),
+    ]
+
+    for comparison in comparisons:
+        store.save_comparison(comparison)
+
+    assert store.list_comparisons() == [comparisons[1], comparisons[0]]
+
+
+def test_comparison_cannot_be_silently_overwritten(tmp_path: Path):
+    from ai_foundry.contracts import Comparison
+
+    store = ArtifactStore(tmp_path)
+    original = Comparison("immutable", ("run-1",), "original")
+    changed = Comparison("immutable", ("run-2",), "changed")
+
+    store.save_comparison(original)
+
+    with pytest.raises(FileExistsError):
+        store.save_comparison(changed)
+
+    assert store.load_comparison("immutable") == original
