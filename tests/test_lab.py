@@ -124,6 +124,21 @@ def test_results_can_be_filtered_by_run_id(tmp_path: Path):
     assert store.list_results(second_result.run_id) == [second_result]
 
 
+def test_run_can_be_loaded_directly_by_run_id(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+    run, _ = lab.run(Experiment("direct-load", "fake-model", "hello"))
+
+    assert store.load_run(run.run_id) == run
+
+
+def test_missing_run_load_raises_file_not_found(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+
+    with pytest.raises(FileNotFoundError):
+        store.load_run("missing-run")
+
+
 def test_run_cannot_be_silently_overwritten(tmp_path: Path):
     store = ArtifactStore(tmp_path)
     lab = Lab(FakeRuntime(), store)
