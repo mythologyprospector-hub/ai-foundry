@@ -134,6 +134,16 @@ class ArtifactStore:
             return path
         return self._write("results", result.run_id, result.to_dict())
 
+    def load_result(self, run_id: str) -> Result:
+        """Load a preserved result."""
+        path = self.root / "results" / f"{run_id}.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return Result(
+            run_id=str(data["run_id"]),
+            output=str(data["output"]),
+            metadata=dict(data.get("metadata", {})),
+        )
+
     def list_runs(self, experiment_id: str | None = None) -> list[Run]:
         """Return preserved runs, optionally limited to one experiment."""
         directory = self.root / "runs"
