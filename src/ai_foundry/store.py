@@ -117,6 +117,19 @@ class ArtifactStore:
             return path
         return self._write("runs", run.run_id, run.to_dict())
 
+    def load_run(self, run_id: str) -> Run:
+        """Load a preserved run by run ID."""
+        path = self.root / "runs" / f"{run_id}.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return Run(
+            run_id=str(data["run_id"]),
+            experiment_id=str(data["experiment_id"]),
+            started_at=datetime.fromisoformat(data["started_at"]),
+            finished_at=datetime.fromisoformat(data["finished_at"]),
+            configuration=dict(data.get("configuration", {})),
+            provenance=dict(data.get("provenance", {})),
+        )
+
     def save_result(self, result: Result) -> Path:
         """Preserve a result without silently changing it."""
         path = self.root / "results" / f"{result.run_id}.json"
@@ -165,15 +178,7 @@ class ArtifactStore:
 
         runs: list[Run] = []
         for path in sorted(directory.glob("*.json"), key=lambda item: item.name):
-            data = json.loads(path.read_text(encoding="utf-8"))
-            run = Run(
-                run_id=str(data["run_id"]),
-                experiment_id=str(data["experiment_id"]),
-                started_at=datetime.fromisoformat(data["started_at"]),
-                finished_at=datetime.fromisoformat(data["finished_at"]),
-                configuration=dict(data.get("configuration", {})),
-                provenance=dict(data.get("provenance", {})),
-            )
+            run = self.load_run(path.stem)
             if experiment_id is None or run.experiment_id == experiment_id:
                 runs.append(run)
         return runs
