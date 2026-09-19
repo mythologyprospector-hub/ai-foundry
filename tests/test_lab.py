@@ -31,6 +31,10 @@ def test_experiment_runs_and_persists_artifacts(tmp_path: Path):
     assert (tmp_path / "experiments/hello-world.json").exists()
     assert (tmp_path / f"runs/{run.run_id}.json").exists()
     assert (tmp_path / f"results/{run.run_id}.json").exists()
+    assert run.provenance == {
+        "runtime_adapter": "FakeRuntime",
+        "runtime_module": "test_lab",
+    }
 
 
 def test_evaluator_applies_explicit_test(tmp_path: Path):
@@ -250,3 +254,32 @@ def test_comparison_cannot_be_silently_overwritten(tmp_path: Path):
         store.save_comparison(changed)
 
     assert store.load_comparison("immutable") == original
+
+
+def test_run_provenance_survives_save_and_reload(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+    run, _ = lab.run(Experiment("provenance", "fake-model", "hello"))
+
+    preserved = store.list_runs("provenance")[0]
+
+    assert preserved.run_id == run.run_id
+    assert preserved.provenance == run.provenance
+    assert preserved.provenance["runtime_adapter"] == "FakeRuntime"
+    assert preserved.provenance["runtime_module"] == "test_lab"
+
+
+def test_legacy_run_without_explicit_provenance_fields_remains_loadable(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    path = tmp_path / "runs/legacy.json"
+    path.parent.mkdir(parents=True)
+    path.write_text(
+        '{"run_id":"legacy","experiment_id":"old","started_at":"2026-01-01T00:00:00+00:00",'
+        '"finished_at":"2026-01-01T00:00:01+00:00","configuration":{},"provenance":{"runtime":"OldRuntime"}}',
+        encoding="utf-8",
+    )
+
+    run = store.list_runs()[0]
+
+    assert run.run_id == "legacy"
+    assert run.provenance == {"runtime": "OldRuntime"}
