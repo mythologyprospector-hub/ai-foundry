@@ -103,6 +103,46 @@ def test_experiment_history_can_be_enumerated(tmp_path: Path):
     assert store.list_experiments() == [experiments[1], experiments[0]]
 
 
+def test_run_cannot_be_silently_overwritten(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+    run, _ = lab.run(Experiment("run-integrity", "fake-model", "hello"))
+
+    changed = run.__class__(
+        run_id=run.run_id,
+        experiment_id=run.experiment_id,
+        started_at=run.started_at,
+        finished_at=run.finished_at,
+        configuration={"model": "changed"},
+        provenance=run.provenance,
+    )
+
+    with pytest.raises(FileExistsError):
+        store.save_run(changed)
+    assert store.list_runs("run-integrity")[0] == run
+
+
+def test_result_cannot_be_silently_overwritten(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+    run, result = lab.run(Experiment("result-integrity", "fake-model", "hello"))
+
+    changed = result.__class__(run_id=run.run_id, output="changed")
+
+    with pytest.raises(FileExistsError):
+        store.save_result(changed)
+    assert store.load_result(run.run_id) == result
+
+
+def test_run_and_result_identical_resaves_are_idempotent(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+    run, result = lab.run(Experiment("idempotent", "fake-model", "hello"))
+
+    assert store.save_run(run) == tmp_path / f"runs/{run.run_id}.json"
+    assert store.save_result(result) == tmp_path / f"results/{run.run_id}.json"
+
+
 def test_repeated_runs_are_independently_preserved_and_listable(tmp_path: Path):
     store = ArtifactStore(tmp_path)
     lab = Lab(FakeRuntime(), store)
