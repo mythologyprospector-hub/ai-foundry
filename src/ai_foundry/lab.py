@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from .contracts import Experiment, Result, Run, utc_now
+from .contracts import Dataset, Experiment, Result, Run, utc_now
 from .runtime import RuntimeAdapter
 from .store import ArtifactStore
 
@@ -15,6 +15,21 @@ class Lab:
     def __init__(self, runtime: RuntimeAdapter, store: ArtifactStore) -> None:
         self.runtime = runtime
         self.store = store
+
+    def run_dataset(self, experiment: Experiment, dataset: Dataset) -> tuple[tuple[Run, Result], ...]:
+        """Execute one experiment once for each test case in dataset order."""
+        return tuple(
+            self.run(
+                Experiment(
+                    experiment_id=experiment.experiment_id,
+                    model=experiment.model,
+                    prompt=case.input,
+                    parameters=experiment.parameters,
+                    metadata=experiment.metadata,
+                )
+            )
+            for case in dataset.test_cases
+        )
 
     def run_repeated(self, experiment: Experiment, count: int) -> tuple[tuple[Run, Result], ...]:
         """Execute one experiment a finite number of times in sequence."""
