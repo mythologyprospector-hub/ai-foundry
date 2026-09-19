@@ -1,6 +1,6 @@
 # REQ-008 — Result History Enumeration
 
-**Status:** Proposed  
+**Status:** Complete  
 **Phase:** 2 — Experimentation  
 **Tracking Issue:** #16
 
@@ -33,4 +33,19 @@ Dataset-driven execution, batch orchestration, automatic ranking, scoring/statis
 
 ## Verification
 
-Owner-machine verification is required before merge using `uv run pytest -q`.
+Owner-machine verification:
+
+```
+uv run pytest -q
+20 passed in 0.02s
+```
+
+GitHub Actions:
+
+- `tests` workflow run #26
+- conclusion: success
+- verified commit: `002d42a85d104c67c7c2669500bdf9568cad874f`
+
+Implementation merged to `main` in PR #17 as merge commit `856d65255131c4ea778dd0689e5fa27099f14556`.
+
+Issue #16 closed as completed.
