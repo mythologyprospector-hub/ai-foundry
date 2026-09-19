@@ -144,6 +144,19 @@ class ArtifactStore:
             metadata=dict(data.get("metadata", {})),
         )
 
+    def list_results(self, run_id: str | None = None) -> list[Result]:
+        """Return preserved results, optionally limited to one run."""
+        directory = self.root / "results"
+        if not directory.exists():
+            return []
+
+        results: list[Result] = []
+        for path in sorted(directory.glob("*.json"), key=lambda item: item.name):
+            result = self.load_result(path.stem)
+            if run_id is None or result.run_id == run_id:
+                results.append(result)
+        return results
+
     def list_runs(self, experiment_id: str | None = None) -> list[Run]:
         """Return preserved runs, optionally limited to one experiment."""
         directory = self.root / "runs"

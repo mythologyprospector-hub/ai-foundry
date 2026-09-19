@@ -103,6 +103,27 @@ def test_experiment_history_can_be_enumerated(tmp_path: Path):
     assert store.list_experiments() == [experiments[1], experiments[0]]
 
 
+def test_results_are_enumerated_in_stable_order(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+    first_run, first_result = lab.run(Experiment("history-a", "fake-model", "first"))
+    second_run, second_result = lab.run(Experiment("history-b", "fake-model", "second"))
+
+    assert store.list_results() == sorted(
+        [first_result, second_result], key=lambda result: result.run_id
+    )
+
+
+def test_results_can_be_filtered_by_run_id(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+    first_run, first_result = lab.run(Experiment("filter-a", "fake-model", "first"))
+    _, second_result = lab.run(Experiment("filter-b", "fake-model", "second"))
+
+    assert store.list_results(first_run.run_id) == [first_result]
+    assert store.list_results(second_result.run_id) == [second_result]
+
+
 def test_run_cannot_be_silently_overwritten(tmp_path: Path):
     store = ArtifactStore(tmp_path)
     lab = Lab(FakeRuntime(), store)
