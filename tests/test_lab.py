@@ -359,3 +359,81 @@ def test_legacy_run_without_explicit_provenance_fields_remains_loadable(tmp_path
 
     assert run.run_id == "legacy"
     assert run.provenance == {"runtime": "OldRuntime"}
+
+
+def test_evaluation_suite_applies_one_evaluation_per_case_in_order(tmp_path: Path):
+    from ai_foundry.contracts import EvaluationSuite
+
+    lab = Lab(FakeRuntime(), ArtifactStore(tmp_path))
+    _, result = lab.run(Experiment("suite", "fake-model", "hello"))
+    suite = EvaluationSuite(
+        suite_id="basic-suite",
+        test_cases=(
+            DatasetTestCase("contains-model", "ignored"),
+            DatasetTestCase("contains-prompt", "ignored"),
+        ),
+    )
+
+    evaluations = Evaluator().run_suite(
+        result,
+        suite,
+        test=lambda output, case: (
+            ("fake-model" in output)
+            if case.test_case_id == "contains-model"
+            else ("hello" in output)
+        ),
+    )
+
+    assert evaluations == (
+        Evaluation(
+            evaluation_id="basic-suite:contains-model",
+            run_id=result.run_id,
+            name="contains-model",
+            passed=True,
+        ),
+        Evaluation(
+            evaluation_id="basic-suite:contains-prompt",
+            run_id=result.run_id,
+            name="contains-prompt",
+            passed=True,
+        ),
+    )
+
+
+def test_evaluation_suite_can_record_failures_without_ranking(tmp_path: Path):
+    from ai_foundry.contracts import EvaluationSuite
+
+    result = __import__("ai_foundry.contracts", fromlist=["Result"]).Result(
+        run_id="run-suite",
+        output="actual",
+    )
+    suite = EvaluationSuite(
+        suite_id="failure-suite",
+        test_cases=(DatasetTestCase("exact", "ignored"),),
+    )
+
+    evaluations = Evaluator().run_suite(
+        result,
+        suite,
+        test=lambda output, case: output == "expected",
+    )
+
+    assert len(evaluations) == 1
+    assert evaluations[0].passed is False
+    assert evaluations[0].run_id == "run-suite"
+    assert evaluations[0].evaluation_id == "failure-suite:exact"
+
+
+def test_evaluation_suite_preserves_single_test_behavior(tmp_path: Path):
+    lab = Lab(FakeRuntime(), ArtifactStore(tmp_path))
+    _, result = lab.run(Experiment("single", "fake-model", "hello"))
+
+    evaluation = Evaluator().check(
+        result,
+        name="single-check",
+        test=lambda output: output == "fake-model: hello",
+        evaluation_id="single-1",
+    )
+
+    assert evaluation.passed is True
+    assert evaluation.evaluation_id == "single-1"
