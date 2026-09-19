@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from ai_foundry.contracts import Dataset, Evaluation, Experiment, TestCase as DatasetTestCase
+from ai_foundry.contracts import Dataset, Evaluation, Experiment, Result, TestCase as DatasetTestCase
 from ai_foundry.evaluation import Evaluator
 from ai_foundry.lab import Lab
 from ai_foundry.runtime import RuntimeAdapter
@@ -403,7 +403,7 @@ def test_evaluation_suite_applies_one_evaluation_per_case_in_order(tmp_path: Pat
 def test_evaluation_suite_can_record_failures_without_ranking(tmp_path: Path):
     from ai_foundry.contracts import EvaluationSuite
 
-    result = __import__("ai_foundry.contracts", fromlist=["Result"]).Result(
+    result = Result(
         run_id="run-suite",
         output="actual",
     )
