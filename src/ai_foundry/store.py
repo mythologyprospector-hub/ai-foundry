@@ -98,9 +98,40 @@ class ArtifactStore:
         ]
 
     def save_run(self, run: Run) -> Path:
+        """Preserve a run without silently changing it."""
+        path = self.root / "runs" / f"{run.run_id}.json"
+        if path.exists():
+            data = json.loads(path.read_text(encoding="utf-8"))
+            existing = Run(
+                run_id=str(data["run_id"]),
+                experiment_id=str(data["experiment_id"]),
+                started_at=datetime.fromisoformat(data["started_at"]),
+                finished_at=datetime.fromisoformat(data["finished_at"]),
+                configuration=dict(data.get("configuration", {})),
+                provenance=dict(data.get("provenance", {})),
+            )
+            if existing != run:
+                raise FileExistsError(
+                    f"Run already preserved with a different definition: {run.run_id}"
+                )
+            return path
         return self._write("runs", run.run_id, run.to_dict())
 
     def save_result(self, result: Result) -> Path:
+        """Preserve a result without silently changing it."""
+        path = self.root / "results" / f"{result.run_id}.json"
+        if path.exists():
+            data = json.loads(path.read_text(encoding="utf-8"))
+            existing = Result(
+                run_id=str(data["run_id"]),
+                output=str(data["output"]),
+                metadata=dict(data.get("metadata", {})),
+            )
+            if existing != result:
+                raise FileExistsError(
+                    f"Result already preserved with a different definition: {result.run_id}"
+                )
+            return path
         return self._write("results", result.run_id, result.to_dict())
 
     def list_runs(self, experiment_id: str | None = None) -> list[Run]:
