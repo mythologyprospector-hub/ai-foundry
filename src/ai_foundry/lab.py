@@ -16,6 +16,12 @@ class Lab:
         self.runtime = runtime
         self.store = store
 
+    def run_repeated(self, experiment: Experiment, count: int) -> tuple[tuple[Run, Result], ...]:
+        """Execute one experiment a finite number of times in sequence."""
+        if count < 1:
+            raise ValueError("count must be at least 1")
+        return tuple(self.run(experiment) for _ in range(count))
+
     def run(self, experiment: Experiment) -> tuple[Run, Result]:
         self.store.save_experiment(experiment)
         run_id = uuid4().hex
