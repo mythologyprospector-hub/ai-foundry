@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from .contracts import Experiment, Result, Run, utc_now
+from .contracts import Dataset, Experiment, Result, Run, utc_now
 from .runtime import RuntimeAdapter
 from .store import ArtifactStore
 
@@ -16,6 +16,14 @@ class Lab:
         self.runtime = runtime
         self.store = store
 
+    def run_dataset(self, experiment: Experiment, dataset: Dataset) -> tuple[tuple[Run, Result], ...]:
+        """Execute one experiment once for each test case in dataset order."""
+        self.store.save_experiment(experiment)
+        return tuple(
+            self._run(experiment, prompt=case.input)
+            for case in dataset.test_cases
+        )
+
     def run_repeated(self, experiment: Experiment, count: int) -> tuple[tuple[Run, Result], ...]:
         """Execute one experiment a finite number of times in sequence."""
         if count < 1:
@@ -24,11 +32,14 @@ class Lab:
 
     def run(self, experiment: Experiment) -> tuple[Run, Result]:
         self.store.save_experiment(experiment)
+        return self._run(experiment)
+
+    def _run(self, experiment: Experiment, *, prompt: str | None = None) -> tuple[Run, Result]:
         run_id = uuid4().hex
         started_at = utc_now()
         output = self.runtime.generate(
             model=experiment.model,
-            prompt=experiment.prompt,
+            prompt=experiment.prompt if prompt is None else prompt,
             parameters=experiment.parameters,
         )
         finished_at = utc_now()
@@ -41,7 +52,7 @@ class Lab:
             finished_at=finished_at,
             configuration={
                 "model": experiment.model,
-                "prompt": experiment.prompt,
+                "prompt": experiment.prompt if prompt is None else prompt,
                 "parameters": dict(experiment.parameters),
             },
             provenance={
