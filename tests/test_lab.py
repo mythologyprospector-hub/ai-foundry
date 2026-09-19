@@ -437,3 +437,25 @@ def test_evaluation_suite_preserves_single_test_behavior(tmp_path: Path):
 
     assert evaluation.passed is True
     assert evaluation.evaluation_id == "single-1"
+
+
+def test_lab_can_execute_a_finite_number_of_repeated_runs(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+    experiment = Experiment("repeat-api", "fake-model", "repeat me")
+
+    runs = lab.run_repeated(experiment, 3)
+
+    assert len(runs) == 3
+    assert len({run.run_id for run, _ in runs}) == 3
+    assert len({result.run_id for _, result in runs}) == 3
+    assert [run.experiment_id for run, _ in runs] == ["repeat-api"] * 3
+    assert [result.run_id for _, result in runs] == [run.run_id for run, _ in runs]
+    assert len(store.list_runs("repeat-api")) == 3
+
+
+def test_lab_repeated_runs_require_a_positive_count(tmp_path: Path):
+    lab = Lab(FakeRuntime(), ArtifactStore(tmp_path))
+
+    with pytest.raises(ValueError, match="count must be at least 1"):
+        lab.run_repeated(Experiment("repeat-invalid", "fake-model", "repeat"), 0)
