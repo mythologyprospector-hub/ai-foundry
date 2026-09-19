@@ -2,10 +2,9 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
 from typing import Callable
 
-from .contracts import Evaluation, Result
+from .contracts import Evaluation, EvaluationSuite, Result, TestCase
 
 
 class Evaluator:
@@ -29,4 +28,22 @@ class Evaluator:
             name=name,
             passed=bool(test(result.output)),
             detail=detail,
+        )
+
+    def run_suite(
+        self,
+        result: Result,
+        suite: EvaluationSuite,
+        *,
+        test: Callable[[str, TestCase], bool],
+    ) -> tuple[Evaluation, ...]:
+        """Apply one explicit test function to every case in suite order."""
+        return tuple(
+            self.check(
+                result,
+                name=case.test_case_id,
+                test=lambda output, case=case: test(output, case),
+                evaluation_id=f"{suite.suite_id}:{case.test_case_id}",
+            )
+            for case in suite.test_cases
         )
