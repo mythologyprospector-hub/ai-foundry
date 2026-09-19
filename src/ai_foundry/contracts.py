@@ -38,6 +38,18 @@ class Dataset:
 
 
 @dataclass(frozen=True)
+class EvaluationSuite:
+    """A named, ordered collection of explicit test cases."""
+
+    suite_id: str
+    test_cases: tuple[TestCase, ...]
+    metadata: Mapping[str, Any] = field(default_factory=dict)
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
 class Experiment:
     """A reproducible definition of one AI experiment."""
 
