@@ -18,16 +18,9 @@ class Lab:
 
     def run_dataset(self, experiment: Experiment, dataset: Dataset) -> tuple[tuple[Run, Result], ...]:
         """Execute one experiment once for each test case in dataset order."""
+        self.store.save_experiment(experiment)
         return tuple(
-            self.run(
-                Experiment(
-                    experiment_id=experiment.experiment_id,
-                    model=experiment.model,
-                    prompt=case.input,
-                    parameters=experiment.parameters,
-                    metadata=experiment.metadata,
-                )
-            )
+            self._run(experiment, prompt=case.input)
             for case in dataset.test_cases
         )
 
@@ -39,11 +32,14 @@ class Lab:
 
     def run(self, experiment: Experiment) -> tuple[Run, Result]:
         self.store.save_experiment(experiment)
+        return self._run(experiment)
+
+    def _run(self, experiment: Experiment, *, prompt: str | None = None) -> tuple[Run, Result]:
         run_id = uuid4().hex
         started_at = utc_now()
         output = self.runtime.generate(
             model=experiment.model,
-            prompt=experiment.prompt,
+            prompt=experiment.prompt if prompt is None else prompt,
             parameters=experiment.parameters,
         )
         finished_at = utc_now()
@@ -56,7 +52,7 @@ class Lab:
             finished_at=finished_at,
             configuration={
                 "model": experiment.model,
-                "prompt": experiment.prompt,
+                "prompt": experiment.prompt if prompt is None else prompt,
                 "parameters": dict(experiment.parameters),
             },
             provenance={
