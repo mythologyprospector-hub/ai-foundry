@@ -27,6 +27,7 @@ class Lab:
         )
         finished_at = utc_now()
 
+        runtime_type = type(self.runtime)
         run = Run(
             run_id=run_id,
             experiment_id=experiment.experiment_id,
@@ -37,7 +38,10 @@ class Lab:
                 "prompt": experiment.prompt,
                 "parameters": dict(experiment.parameters),
             },
-            provenance={"runtime": type(self.runtime).__name__},
+            provenance={
+                "runtime_adapter": runtime_type.__qualname__,
+                "runtime_module": runtime_type.__module__,
+            },
         )
         result = Result(run_id=run_id, output=output)
         self.store.save_run(run)
