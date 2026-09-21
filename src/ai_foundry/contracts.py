@@ -108,6 +108,19 @@ class Evaluation:
 
 
 @dataclass(frozen=True)
+class Regression:
+    """An explicit baseline/candidate evaluation difference requiring inspection."""
+
+    name: str
+    status: str
+    baseline_evaluation_id: str | None = None
+    candidate_evaluation_id: str | None = None
+
+    def to_dict(self) -> dict[str, Any]:
+        return asdict(self)
+
+
+@dataclass(frozen=True)
 class Comparison:
     """A durable selection of runs for explicit side-by-side comparison."""
 
