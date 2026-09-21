@@ -552,6 +552,59 @@ def test_evaluator_rejects_duplicate_evaluation_names():
         Evaluator().compare_evaluations(duplicate, ())
 
 
+def test_regression_can_be_preserved_and_reloaded(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    regression = Regression(
+        name="accuracy",
+        status="regression",
+        baseline_evaluation_id="base",
+        candidate_evaluation_id="candidate",
+    )
+
+    path = store.save_regression("regression-001", regression)
+
+    assert path == tmp_path / "regressions/regression-001.json"
+    assert store.load_regression("regression-001") == regression
+
+
+def test_regression_history_is_enumerated_in_stable_order(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    regressions = {
+        "regression-beta": Regression("beta", "missing-candidate", baseline_evaluation_id="base-b"),
+        "regression-alpha": Regression("alpha", "regression", "base-a", "candidate-a"),
+    }
+
+    for regression_id, regression in regressions.items():
+        store.save_regression(regression_id, regression)
+
+    assert store.list_regressions() == [
+        regressions["regression-alpha"],
+        regressions["regression-beta"],
+    ]
+
+
+def test_regression_cannot_be_silently_overwritten(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    original = Regression("accuracy", "regression", "base", "candidate")
+    changed = Regression("accuracy", "missing-candidate", "base", None)
+
+    store.save_regression("immutable", original)
+
+    with pytest.raises(FileExistsError):
+        store.save_regression("immutable", changed)
+
+    assert store.load_regression("immutable") == original
+
+
+def test_regression_identical_resave_is_idempotent(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    regression = Regression("accuracy", "regression", "base", "candidate")
+
+    path = store.save_regression("repeat", regression)
+
+    assert store.save_regression("repeat", regression) == path
+
+
 def test_regression_record_is_inspectable():
     regression = Regression(
         name="accuracy",

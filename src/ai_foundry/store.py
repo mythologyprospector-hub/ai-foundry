@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any
 
-from .contracts import Comparison, Dataset, Evaluation, Experiment, Result, Run, TestCase
+from .contracts import Comparison, Dataset, Evaluation, Experiment, Regression, Result, Run, TestCase
 
 
 class ArtifactStore:
@@ -220,6 +220,47 @@ class ArtifactStore:
             if run_id is None or evaluation.run_id == run_id:
                 evaluations.append(evaluation)
         return evaluations
+
+    def save_regression(self, regression_id: str, regression: Regression) -> Path:
+        """Preserve a regression under a stable caller-provided identifier."""
+        path = self.root / "regressions" / f"{regression_id}.json"
+        if path.exists():
+            preserved = self.load_regression(regression_id)
+            if preserved != regression:
+                raise FileExistsError(
+                    f"Regression already preserved with a different definition: {regression_id}"
+                )
+            return path
+        return self._write("regressions", regression_id, regression.to_dict())
+
+    def load_regression(self, regression_id: str) -> Regression:
+        """Load a preserved regression record by stable identifier."""
+        path = self.root / "regressions" / f"{regression_id}.json"
+        data = json.loads(path.read_text(encoding="utf-8"))
+        return Regression(
+            name=str(data["name"]),
+            status=str(data["status"]),
+            baseline_evaluation_id=(
+                None
+                if data.get("baseline_evaluation_id") is None
+                else str(data["baseline_evaluation_id"])
+            ),
+            candidate_evaluation_id=(
+                None
+                if data.get("candidate_evaluation_id") is None
+                else str(data["candidate_evaluation_id"])
+            ),
+        )
+
+    def list_regressions(self) -> list[Regression]:
+        """Return preserved regressions in stable identifier order."""
+        directory = self.root / "regressions"
+        if not directory.exists():
+            return []
+        return [
+            self.load_regression(path.stem)
+            for path in sorted(directory.glob("*.json"), key=lambda item: item.name)
+        ]
 
     def save_comparison(self, comparison: Comparison) -> Path:
         """Preserve a comparison without silently changing it."""
