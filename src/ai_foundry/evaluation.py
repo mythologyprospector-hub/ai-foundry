@@ -54,8 +54,17 @@ class Evaluator:
         candidate: tuple[Evaluation, ...],
     ) -> tuple[Regression, ...]:
         """Identify regressions and missing evaluation names deterministically."""
-        baseline_by_name = {evaluation.name: evaluation for evaluation in baseline}
-        candidate_by_name = {evaluation.name: evaluation for evaluation in candidate}
+        baseline_by_name: dict[str, Evaluation] = {}
+        for evaluation in baseline:
+            if evaluation.name in baseline_by_name:
+                raise ValueError(f"duplicate baseline evaluation name: {evaluation.name}")
+            baseline_by_name[evaluation.name] = evaluation
+
+        candidate_by_name: dict[str, Evaluation] = {}
+        for evaluation in candidate:
+            if evaluation.name in candidate_by_name:
+                raise ValueError(f"duplicate candidate evaluation name: {evaluation.name}")
+            candidate_by_name[evaluation.name] = evaluation
 
         records: list[Regression] = []
         for name in sorted(baseline_by_name.keys() | candidate_by_name.keys()):
