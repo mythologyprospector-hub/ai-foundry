@@ -16,6 +16,7 @@ This document establishes the initial working vocabulary for the project. Terms 
 | **Dataset** | A named, versionable collection of inputs and/or expected outputs used by experiments or evaluations. |
 | **Test Case** | A defined input and expected or checkable behavior used to test a configuration. |
 | **Evaluation** | A measurement, comparison, or judgment applied to one or more results. |
+| **Regression** | An explicit baseline/candidate evaluation difference in which a named evaluation passed in the baseline and failed in the candidate. |
 | **Experiment** | A controlled execution or set of executions performed against defined inputs and configuration. |
 | **Run** | One concrete execution of an experiment or configuration. |
 | **Result** | The output and associated execution evidence produced by a run. |

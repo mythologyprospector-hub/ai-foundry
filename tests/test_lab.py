@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from ai_foundry.contracts import Dataset, Evaluation, Experiment, Result, TestCase as DatasetTestCase
+from ai_foundry.contracts import Dataset, Evaluation, Experiment, Regression, Result, TestCase as DatasetTestCase
 from ai_foundry.evaluation import Evaluator
 from ai_foundry.lab import Lab
 from ai_foundry.runtime import RuntimeAdapter
@@ -493,3 +493,76 @@ def test_lab_dataset_execution_of_empty_dataset_returns_no_runs(tmp_path: Path):
 
     assert lab.run_dataset(experiment, Dataset("empty", ())) == ()
     assert store.list_runs("dataset-empty") == []
+
+
+def test_evaluator_reports_regressions_and_missing_names_deterministically(tmp_path: Path):
+    baseline = (
+        Evaluation("base-b", "run-base", "beta", True),
+        Evaluation("base-a", "run-base", "alpha", True),
+        Evaluation("base-stable", "run-base", "stable", False),
+    )
+    candidate = (
+        Evaluation("candidate-new", "run-candidate", "gamma", True),
+        Evaluation("candidate-a", "run-candidate", "alpha", False),
+        Evaluation("candidate-stable", "run-candidate", "stable", False),
+    )
+
+    records = Evaluator().compare_evaluations(baseline, candidate)
+
+    assert records == (
+        Regression(
+            name="alpha",
+            status="regression",
+            baseline_evaluation_id="base-a",
+            candidate_evaluation_id="candidate-a",
+        ),
+        Regression(
+            name="beta",
+            status="missing-candidate",
+            baseline_evaluation_id="base-b",
+        ),
+        Regression(
+            name="gamma",
+            status="missing-baseline",
+            candidate_evaluation_id="candidate-new",
+        ),
+    )
+
+
+def test_evaluator_does_not_report_unchanged_pass_or_fail_as_regression():
+    baseline = (
+        Evaluation("base-pass", "run-base", "pass", True),
+        Evaluation("base-fail", "run-base", "fail", False),
+    )
+    candidate = (
+        Evaluation("candidate-pass", "run-candidate", "pass", True),
+        Evaluation("candidate-fail", "run-candidate", "fail", False),
+    )
+
+    assert Evaluator().compare_evaluations(baseline, candidate) == ()
+
+
+def test_evaluator_rejects_duplicate_evaluation_names():
+    duplicate = (
+        Evaluation("one", "run-base", "same", True),
+        Evaluation("two", "run-base", "same", False),
+    )
+
+    with pytest.raises(ValueError, match="duplicate baseline evaluation name"):
+        Evaluator().compare_evaluations(duplicate, ())
+
+
+def test_regression_record_is_inspectable():
+    regression = Regression(
+        name="accuracy",
+        status="regression",
+        baseline_evaluation_id="base",
+        candidate_evaluation_id="candidate",
+    )
+
+    assert regression.to_dict() == {
+        "name": "accuracy",
+        "status": "regression",
+        "baseline_evaluation_id": "base",
+        "candidate_evaluation_id": "candidate",
+    }
