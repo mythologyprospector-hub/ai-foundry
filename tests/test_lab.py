@@ -459,3 +459,37 @@ def test_lab_repeated_runs_require_a_positive_count(tmp_path: Path):
 
     with pytest.raises(ValueError, match="count must be at least 1"):
         lab.run_repeated(Experiment("repeat-invalid", "fake-model", "repeat"), 0)
+
+
+
+def test_lab_can_execute_an_experiment_against_dataset_in_order(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+    experiment = Experiment("dataset-run", "fake-model", "unused")
+    dataset = Dataset(
+        "inputs",
+        (
+            DatasetTestCase("first", "alpha"),
+            DatasetTestCase("second", "beta"),
+        ),
+    )
+
+    runs = lab.run_dataset(experiment, dataset)
+
+    assert len(runs) == 2
+    assert [result.output for _, result in runs] == [
+        "fake-model: alpha",
+        "fake-model: beta",
+    ]
+    assert [run.configuration["prompt"] for run, _ in runs] == ["alpha", "beta"]
+    assert [result.run_id for _, result in runs] == [run.run_id for run, _ in runs]
+    assert len(store.list_runs("dataset-run")) == 2
+
+
+def test_lab_dataset_execution_of_empty_dataset_returns_no_runs(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+    experiment = Experiment("dataset-empty", "fake-model", "unused")
+
+    assert lab.run_dataset(experiment, Dataset("empty", ())) == ()
+    assert store.list_runs("dataset-empty") == []
