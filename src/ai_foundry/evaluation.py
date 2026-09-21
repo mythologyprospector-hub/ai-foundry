@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import Callable
 
-from .contracts import Evaluation, EvaluationSuite, Result, TestCase
+from .contracts import Evaluation, EvaluationSuite, Regression, Result, TestCase
 
 
 class Evaluator:
@@ -47,3 +47,49 @@ class Evaluator:
             )
             for case in suite.test_cases
         )
+
+    def compare_evaluations(
+        self,
+        baseline: tuple[Evaluation, ...],
+        candidate: tuple[Evaluation, ...],
+    ) -> tuple[Regression, ...]:
+        """Identify regressions and missing evaluation names deterministically."""
+        baseline_by_name = {evaluation.name: evaluation for evaluation in baseline}
+        candidate_by_name = {evaluation.name: evaluation for evaluation in candidate}
+
+        records: list[Regression] = []
+        for name in sorted(baseline_by_name.keys() | candidate_by_name.keys()):
+            baseline_evaluation = baseline_by_name.get(name)
+            candidate_evaluation = candidate_by_name.get(name)
+
+            if baseline_evaluation is None:
+                records.append(
+                    Regression(
+                        name=name,
+                        status="missing-baseline",
+                        candidate_evaluation_id=candidate_evaluation.evaluation_id,
+                    )
+                )
+                continue
+
+            if candidate_evaluation is None:
+                records.append(
+                    Regression(
+                        name=name,
+                        status="missing-candidate",
+                        baseline_evaluation_id=baseline_evaluation.evaluation_id,
+                    )
+                )
+                continue
+
+            if baseline_evaluation.passed and not candidate_evaluation.passed:
+                records.append(
+                    Regression(
+                        name=name,
+                        status="regression",
+                        baseline_evaluation_id=baseline_evaluation.evaluation_id,
+                        candidate_evaluation_id=candidate_evaluation.evaluation_id,
+                    )
+                )
+
+        return tuple(records)
