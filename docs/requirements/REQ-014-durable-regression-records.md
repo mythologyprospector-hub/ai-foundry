@@ -1,6 +1,6 @@
 # REQ-014 — Durable Regression Records
 
-**Status:** Proposed  
+**Status:** Complete  
 **Phase:** 2 — Experimentation  
 **Issue:** #30
 
@@ -38,4 +38,6 @@ Make the explicit regression records introduced by REQ-013 durable and inspectab
 
 ## Verification
 
-Owner-machine and GitHub Actions verification are required before completion.
+- Owner machine: `uv run pytest -q` → **39 passed in 0.11s**.
+- GitHub Actions tests run **#43** (ID **35665278745**) → **success**.
+- PR #31 merged to `main` as **0448efebfeea8f6826bc0c45290103d47e7ecc67**.
