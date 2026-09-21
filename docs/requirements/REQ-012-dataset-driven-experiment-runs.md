@@ -1,6 +1,6 @@
 # REQ-012 — Dataset-Driven Experiment Runs
 
-**Status:** Proposed  
+**Status:** Complete  
 **Phase:** 2 — Experimentation  
 **Tracking Issue:** #26
 
@@ -31,4 +31,6 @@ Scheduling, concurrency, distributed execution, retries, statistical aggregation
 
 ## Verification
 
-Owner-machine verification is required before merge.
+- Owner machine: `uv run pytest -q` → **31 passed in 0.06s**.
+- GitHub Actions: workflow `tests`, run **#38**, conclusion **success**, for commit `0fefe2811eab33f933f1b7d1e16a29815020d430`.
+- Pull request #27 merged to `main` as **f2255047eb217f663ed60c20fcab1d8e2d7d5bcb**.
