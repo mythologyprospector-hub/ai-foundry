@@ -19,6 +19,7 @@ class Lab:
     def run_dataset(self, experiment: Experiment, dataset: Dataset) -> tuple[tuple[Run, Result], ...]:
         """Execute one experiment once for each test case in dataset order."""
         self.store.save_experiment(experiment)
+        self.store.save_dataset(dataset)
         return tuple(
             self._run(experiment, prompt=case.input)
             for case in dataset.test_cases
