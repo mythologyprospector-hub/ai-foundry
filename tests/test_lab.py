@@ -439,6 +439,25 @@ def test_evaluation_suite_preserves_single_test_behavior(tmp_path: Path):
     assert evaluation.evaluation_id == "single-1"
 
 
+def test_lab_dataset_run_preserves_dataset(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+    dataset = Dataset(
+        "preserved-dataset",
+        (
+            TestCase("case-a", "first"),
+            TestCase("case-b", "second"),
+        ),
+    )
+    experiment = Experiment("dataset-preserve", "fake-model", "unused")
+
+    runs = lab.run_dataset(experiment, dataset)
+
+    assert store.load_dataset(dataset.dataset_id) == dataset
+    assert len(runs) == 2
+    assert [run.configuration["prompt"] for run, _ in runs] == ["first", "second"]
+
+
 def test_lab_can_execute_a_finite_number_of_repeated_runs(tmp_path: Path):
     store = ArtifactStore(tmp_path)
     lab = Lab(FakeRuntime(), store)
