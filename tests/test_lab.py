@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 
-from ai_foundry.contracts import Dataset, Evaluation, Experiment, Regression, Result, TestCase
+from ai_foundry.contracts import Dataset, Evaluation, Experiment, Regression, Result, TestCase as DatasetTestCase
 from ai_foundry.evaluation import Evaluator
 from ai_foundry.lab import Lab
 from ai_foundry.runtime import RuntimeAdapter
@@ -445,8 +445,8 @@ def test_lab_dataset_run_preserves_dataset(tmp_path: Path):
     dataset = Dataset(
         "preserved-dataset",
         (
-            TestCase("case-a", "first"),
-            TestCase("case-b", "second"),
+            DatasetTestCase("case-a", "first"),
+            DatasetTestCase("case-b", "second"),
         ),
     )
     experiment = Experiment("dataset-preserve", "fake-model", "unused")
