@@ -1,6 +1,6 @@
 # REQ-015 — Preserve Dataset-Driven Inputs
 
-**Status:** Proposed  
+**Status:** Complete  
 **Phase:** 2 — Experimentation  
 **Issue:** #32
 
