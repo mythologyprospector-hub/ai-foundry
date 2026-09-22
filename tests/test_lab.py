@@ -67,6 +67,37 @@ def test_evaluator_applies_explicit_test(tmp_path: Path):
     assert evaluation.run_id == result.run_id
 
 
+def test_lab_evaluate_persists_evaluation(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+    _, result = lab.run(Experiment("durable-eval", "fake-model", "hello"))
+
+    evaluation = lab.evaluate(
+        result,
+        name="contains-model",
+        test=lambda output: "fake-model" in output,
+        evaluation_id="durable-eval-1",
+    )
+
+    assert evaluation == store.load_evaluation("durable-eval-1")
+    assert evaluation.run_id == result.run_id
+    assert evaluation.passed is True
+
+
+def test_lab_evaluate_rejects_result_without_preserved_run(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+    result = Result(run_id="missing-run", output="actual")
+
+    with pytest.raises(FileNotFoundError, match="Evaluation run reference does not exist"):
+        lab.evaluate(
+            result,
+            name="check",
+            test=lambda output: True,
+            evaluation_id="missing-run-eval",
+        )
+
+
 def test_preserved_experiment_can_be_reloaded_and_run_again(tmp_path: Path):
     store = ArtifactStore(tmp_path)
     lab = Lab(FakeRuntime(), store)
