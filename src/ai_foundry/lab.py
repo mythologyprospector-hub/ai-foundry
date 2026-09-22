@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from .contracts import Dataset, Evaluation, Experiment, Result, Run, utc_now
+from .contracts import Dataset, Evaluation, Experiment, Result, Run, RunProvenance, utc_now
 from .evaluation import Evaluator
 from .runtime import RuntimeAdapter
 from .store import ArtifactStore
@@ -37,6 +37,13 @@ class Lab:
         )
         self.store.save_evaluation(evaluation)
         return evaluation
+
+    def inspect_provenance(self, run_id: str) -> RunProvenance:
+        """Inspect a preserved run, its result, and linked evaluations."""
+        run = self.store.load_run(run_id)
+        result = self.store.load_result(run_id)
+        evaluations = tuple(self.store.list_evaluations(run_id))
+        return RunProvenance(run=run, result=result, evaluations=evaluations)
 
     def run_dataset(self, experiment: Experiment, dataset: Dataset) -> tuple[tuple[Run, Result], ...]:
         """Execute one experiment once for each test case in dataset order."""
