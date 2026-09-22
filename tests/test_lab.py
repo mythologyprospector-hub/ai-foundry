@@ -1,8 +1,9 @@
+from datetime import datetime, timezone
 from pathlib import Path
 
 import pytest
 
-from ai_foundry.contracts import Dataset, Evaluation, Experiment, Regression, Result, TestCase as DatasetTestCase
+from ai_foundry.contracts import Dataset, Evaluation, Experiment, Regression, Result, Run, TestCase as DatasetTestCase
 from ai_foundry.evaluation import Evaluator
 from ai_foundry.lab import Lab
 from ai_foundry.runtime import RuntimeAdapter
@@ -12,6 +13,18 @@ from ai_foundry.store import ArtifactStore
 class FakeRuntime(RuntimeAdapter):
     def generate(self, *, model, prompt, parameters):
         return f"{model}: {prompt}"
+
+
+def preserve_run(store: ArtifactStore, run_id: str) -> None:
+    store.save_run(
+        Run(
+            run_id=run_id,
+            experiment_id=f"experiment-{run_id}",
+            started_at=datetime(2026, 1, 1, tzinfo=timezone.utc),
+            finished_at=datetime(2026, 1, 1, 0, 0, 1, tzinfo=timezone.utc),
+            configuration={},
+        )
+    )
 
 
 def test_experiment_runs_and_persists_artifacts(tmp_path: Path):
@@ -242,6 +255,7 @@ def test_dataset_history_can_be_loaded_and_enumerated(tmp_path: Path):
 
 def test_evaluation_can_be_preserved_and_reloaded(tmp_path: Path):
     store = ArtifactStore(tmp_path)
+    preserve_run(store, "run-001")
     evaluation = Evaluation(
         evaluation_id="eval-001",
         run_id="run-001",
@@ -259,6 +273,8 @@ def test_evaluation_can_be_preserved_and_reloaded(tmp_path: Path):
 
 def test_evaluation_history_can_be_enumerated_and_filtered(tmp_path: Path):
     store = ArtifactStore(tmp_path)
+    preserve_run(store, "run-b")
+    preserve_run(store, "run-a")
     evaluations = [
         Evaluation("eval-beta", "run-b", "check-b", False, "failed"),
         Evaluation("eval-alpha", "run-a", "check-a", True, "passed"),
@@ -273,6 +289,8 @@ def test_evaluation_history_can_be_enumerated_and_filtered(tmp_path: Path):
 
 def test_evaluation_cannot_be_silently_overwritten(tmp_path: Path):
     store = ArtifactStore(tmp_path)
+    preserve_run(store, "run-1")
+    preserve_run(store, "run-2")
     original = Evaluation("immutable", "run-1", "check", True, "original")
     changed = Evaluation("immutable", "run-2", "check", False, "changed")
 
@@ -288,6 +306,8 @@ def test_comparison_can_be_preserved_and_reloaded(tmp_path: Path):
     from ai_foundry.contracts import Comparison
 
     store = ArtifactStore(tmp_path)
+    preserve_run(store, "run-b")
+    preserve_run(store, "run-a")
     comparison = Comparison(
         comparison_id="compare-001",
         run_ids=("run-b", "run-a"),
@@ -306,6 +326,8 @@ def test_comparison_history_can_be_enumerated(tmp_path: Path):
     from ai_foundry.contracts import Comparison
 
     store = ArtifactStore(tmp_path)
+    preserve_run(store, "run-b")
+    preserve_run(store, "run-a")
     comparisons = [
         Comparison("compare-beta", ("run-b",)),
         Comparison("compare-alpha", ("run-a", "run-b")),
@@ -321,6 +343,8 @@ def test_comparison_cannot_be_silently_overwritten(tmp_path: Path):
     from ai_foundry.contracts import Comparison
 
     store = ArtifactStore(tmp_path)
+    preserve_run(store, "run-1")
+    preserve_run(store, "run-2")
     original = Comparison("immutable", ("run-1",), "original")
     changed = Comparison("immutable", ("run-2",), "changed")
 
@@ -573,6 +597,10 @@ def test_evaluator_rejects_duplicate_evaluation_names():
 
 def test_regression_can_be_preserved_and_reloaded(tmp_path: Path):
     store = ArtifactStore(tmp_path)
+    preserve_run(store, "run-base")
+    preserve_run(store, "run-candidate")
+    store.save_evaluation(Evaluation("base", "run-base", "accuracy", True))
+    store.save_evaluation(Evaluation("candidate", "run-candidate", "accuracy", False))
     regression = Regression(
         name="accuracy",
         status="regression",
@@ -588,6 +616,11 @@ def test_regression_can_be_preserved_and_reloaded(tmp_path: Path):
 
 def test_regression_history_is_enumerated_in_stable_order(tmp_path: Path):
     store = ArtifactStore(tmp_path)
+    preserve_run(store, "run-base")
+    preserve_run(store, "run-candidate")
+    store.save_evaluation(Evaluation("base-b", "run-base", "beta", True))
+    store.save_evaluation(Evaluation("base-a", "run-base", "alpha", True))
+    store.save_evaluation(Evaluation("candidate-a", "run-candidate", "alpha", False))
     regressions = {
         "regression-beta": Regression("beta", "missing-candidate", baseline_evaluation_id="base-b"),
         "regression-alpha": Regression("alpha", "regression", "base-a", "candidate-a"),
@@ -604,6 +637,10 @@ def test_regression_history_is_enumerated_in_stable_order(tmp_path: Path):
 
 def test_regression_cannot_be_silently_overwritten(tmp_path: Path):
     store = ArtifactStore(tmp_path)
+    preserve_run(store, "run-base")
+    preserve_run(store, "run-candidate")
+    store.save_evaluation(Evaluation("base", "run-base", "accuracy", True))
+    store.save_evaluation(Evaluation("candidate", "run-candidate", "accuracy", False))
     original = Regression("accuracy", "regression", "base", "candidate")
     changed = Regression("accuracy", "missing-candidate", "base", None)
 
@@ -617,11 +654,42 @@ def test_regression_cannot_be_silently_overwritten(tmp_path: Path):
 
 def test_regression_identical_resave_is_idempotent(tmp_path: Path):
     store = ArtifactStore(tmp_path)
+    preserve_run(store, "run-base")
+    preserve_run(store, "run-candidate")
+    store.save_evaluation(Evaluation("base", "run-base", "accuracy", True))
+    store.save_evaluation(Evaluation("candidate", "run-candidate", "accuracy", False))
     regression = Regression("accuracy", "regression", "base", "candidate")
 
     path = store.save_regression("repeat", regression)
 
     assert store.save_regression("repeat", regression) == path
+
+
+def test_evaluation_rejects_missing_run_reference(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    with pytest.raises(FileNotFoundError, match="Evaluation run reference does not exist"):
+        store.save_evaluation(Evaluation("eval-missing", "run-missing", "check", True))
+
+
+def test_comparison_rejects_missing_run_reference(tmp_path: Path):
+    from ai_foundry.contracts import Comparison
+    store = ArtifactStore(tmp_path)
+    with pytest.raises(FileNotFoundError, match="Comparison run reference does not exist"):
+        store.save_comparison(Comparison("compare-missing", ("run-missing",)))
+
+
+def test_regression_rejects_missing_evaluation_reference(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    with pytest.raises(FileNotFoundError, match="Regression evaluation reference does not exist"):
+        store.save_regression("regression-missing", Regression("accuracy", "regression", "eval-missing", None))
+
+
+def test_regression_allows_legitimate_missing_side(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    preserve_run(store, "run-base")
+    store.save_evaluation(Evaluation("base", "run-base", "accuracy", True))
+    regression = Regression("accuracy", "missing-candidate", baseline_evaluation_id="base")
+    assert store.save_regression("missing-candidate", regression).exists()
 
 
 def test_regression_record_is_inspectable():
