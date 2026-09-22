@@ -779,3 +779,38 @@ def test_lab_provenance_inspection_reports_missing_result(tmp_path: Path):
 
     with pytest.raises(FileNotFoundError):
         lab.inspect_provenance(run.run_id)
+
+
+def test_lab_compare_persists_comparison(tmp_path: Path):
+    from ai_foundry.contracts import Comparison
+
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+    first_run, _ = lab.run(Experiment("compare-a", "fake-model", "first"))
+    second_run, _ = lab.run(Experiment("compare-b", "fake-model", "second"))
+
+    comparison = lab.compare(
+        (first_run.run_id, second_run.run_id),
+        comparison_id="durable-comparison-1",
+        note="Compare two runs.",
+        metadata={"purpose": "workflow test"},
+    )
+
+    assert comparison == Comparison(
+        comparison_id="durable-comparison-1",
+        run_ids=(first_run.run_id, second_run.run_id),
+        note="Compare two runs.",
+        metadata={"purpose": "workflow test"},
+    )
+    assert comparison == store.load_comparison("durable-comparison-1")
+
+
+def test_lab_compare_rejects_missing_run_reference(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+
+    with pytest.raises(FileNotFoundError, match="Comparison run reference does not exist"):
+        lab.compare(
+            ("missing-run",),
+            comparison_id="missing-run-comparison",
+        )
