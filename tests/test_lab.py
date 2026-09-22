@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from ai_foundry.contracts import Dataset, Evaluation, Experiment, Regression, Result, Run, TestCase as DatasetTestCase
+from ai_foundry.contracts import Dataset, Evaluation, Experiment, Regression, Result, Run, RunProvenance, TestCase as DatasetTestCase
 from ai_foundry.evaluation import Evaluator
 from ai_foundry.lab import Lab
 from ai_foundry.runtime import RuntimeAdapter
@@ -737,3 +737,45 @@ def test_regression_record_is_inspectable():
         "baseline_evaluation_id": "base",
         "candidate_evaluation_id": "candidate",
     }
+
+
+def test_lab_inspects_complete_run_provenance(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+    run, result = lab.run(Experiment("inspect", "fake-model", "hello"))
+    lab.evaluate(
+        result,
+        name="contains-model",
+        test=lambda output: "fake-model" in output,
+        evaluation_id="inspect-eval",
+    )
+
+    provenance = lab.inspect_provenance(run.run_id)
+
+    assert provenance == RunProvenance(
+        run=run,
+        result=result,
+        evaluations=(store.load_evaluation("inspect-eval"),),
+    )
+
+
+def test_lab_inspects_run_without_evaluations(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+    run, result = lab.run(Experiment("unevaluated", "fake-model", "hello"))
+
+    provenance = lab.inspect_provenance(run.run_id)
+
+    assert provenance.run == run
+    assert provenance.result == result
+    assert provenance.evaluations == ()
+
+
+def test_lab_provenance_inspection_reports_missing_result(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+    run, _ = lab.run(Experiment("missing-result", "fake-model", "hello"))
+    (tmp_path / f"results/{run.run_id}.json").unlink()
+
+    with pytest.raises(FileNotFoundError):
+        lab.inspect_provenance(run.run_id)
