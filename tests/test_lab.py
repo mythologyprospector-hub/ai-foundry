@@ -876,9 +876,14 @@ def test_lab_regress_persists_regression_records(tmp_path: Path):
             status="missing-baseline",
             candidate_evaluation_id="candidate-new",
         ),
+        Regression(
+            name="stable",
+            status="missing-candidate",
+            baseline_evaluation_id="base-stable",
+        ),
     )
     assert store.load_regression("comparison-1-0") == regressions[0]
-    assert store.load_regression("comparison-1-1") == regressions[1]
+    assert store.load_regression("comparison-1-2") == regressions[2]
     assert store.list_regressions() == list(regressions)
 
 
