@@ -108,6 +108,15 @@ class Evaluation:
 
 
 @dataclass(frozen=True)
+class RunProvenance:
+    """An inspectable view of one preserved run and its linked artifacts."""
+
+    run: Run
+    result: Result
+    evaluations: tuple[Evaluation, ...]
+
+
+@dataclass(frozen=True)
 class Regression:
     """An explicit baseline/candidate evaluation difference requiring inspection."""
 
