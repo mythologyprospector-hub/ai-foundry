@@ -1,6 +1,6 @@
 # REQ-020 — Preserve Dataset/Test-Case Provenance
 
-**Status:** Proposed  
+**Status:** Complete  
 **Phase:** 2 — Experimentation  
 **Issue:** #42
 
