@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from .contracts import Comparison, Dataset, Evaluation, Experiment, Result, Run, RunProvenance, utc_now
+from .contracts import Comparison, Dataset, Evaluation, Experiment, Regression, Result, Run, RunProvenance, utc_now
 from .evaluation import Evaluator
 from .runtime import RuntimeAdapter
 from .store import ArtifactStore
@@ -62,6 +62,30 @@ class Lab:
         result = self.store.load_result(run_id)
         evaluations = tuple(self.store.list_evaluations(run_id))
         return RunProvenance(run=run, result=result, evaluations=evaluations)
+
+    def regress(
+        self,
+        baseline_evaluation_ids: tuple[str, ...],
+        candidate_evaluation_ids: tuple[str, ...],
+        *,
+        regression_id_prefix: str,
+    ) -> tuple[Regression, ...]:
+        """Compare preserved evaluations and durably preserve the regressions."""
+        baseline = tuple(
+            self.store.load_evaluation(evaluation_id)
+            for evaluation_id in baseline_evaluation_ids
+        )
+        candidate = tuple(
+            self.store.load_evaluation(evaluation_id)
+            for evaluation_id in candidate_evaluation_ids
+        )
+        regressions = self.evaluator.compare_evaluations(baseline, candidate)
+        for index, regression in enumerate(regressions):
+            self.store.save_regression(
+                f"{regression_id_prefix}-{index}",
+                regression,
+            )
+        return regressions
 
     def run_dataset(self, experiment: Experiment, dataset: Dataset) -> tuple[tuple[Run, Result], ...]:
         """Execute one experiment once for each test case in dataset order."""
