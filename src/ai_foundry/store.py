@@ -194,6 +194,7 @@ class ArtifactStore:
                     f"{evaluation.evaluation_id}"
                 )
             return path
+        self._require_reference("runs", evaluation.run_id, "Evaluation run")
         return self._write("evaluations", evaluation.evaluation_id, evaluation.to_dict())
 
     def load_evaluation(self, evaluation_id: str) -> Evaluation:
@@ -231,6 +232,9 @@ class ArtifactStore:
                     f"Regression already preserved with a different definition: {regression_id}"
                 )
             return path
+        for evaluation_id in (regression.baseline_evaluation_id, regression.candidate_evaluation_id):
+            if evaluation_id is not None:
+                self._require_reference("evaluations", evaluation_id, "Regression evaluation")
         return self._write("regressions", regression_id, regression.to_dict())
 
     def load_regression(self, regression_id: str) -> Regression:
@@ -273,6 +277,8 @@ class ArtifactStore:
                     f"{comparison.comparison_id}"
                 )
             return path
+        for run_id in comparison.run_ids:
+            self._require_reference("runs", run_id, "Comparison run")
         return self._write("comparisons", comparison.comparison_id, comparison.to_dict())
 
     def load_comparison(self, comparison_id: str) -> Comparison:
@@ -295,6 +301,12 @@ class ArtifactStore:
             self.load_comparison(path.stem)
             for path in sorted(directory.glob("*.json"), key=lambda item: item.name)
         ]
+
+    def _require_reference(self, kind: str, identifier: str, label: str) -> None:
+        """Require a referenced artifact to exist in this store."""
+        path = self.root / kind / f"{identifier}.json"
+        if not path.exists():
+            raise FileNotFoundError(f"{label} reference does not exist: {identifier}")
 
     def _write(self, kind: str, identifier: str, data: dict[str, Any]) -> Path:
         directory = self.root / kind
