@@ -841,3 +841,48 @@ def test_lab_ordinary_run_has_no_dataset_test_case_provenance(tmp_path: Path):
 
     assert "dataset_id" not in run.provenance
     assert "test_case_id" not in run.provenance
+
+
+def test_lab_regress_persists_regression_records(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+    preserve_run(store, "run-base")
+    preserve_run(store, "run-candidate")
+    store.save_evaluation(Evaluation("base-alpha", "run-base", "alpha", True))
+    store.save_evaluation(Evaluation("base-stable", "run-base", "stable", False))
+    store.save_evaluation(Evaluation("candidate-alpha", "run-candidate", "alpha", False))
+    store.save_evaluation(Evaluation("candidate-new", "run-candidate", "gamma", True))
+
+    regressions = lab.regress(
+        ("base-alpha", "base-stable"),
+        ("candidate-alpha", "candidate-new"),
+        regression_id_prefix="comparison-1",
+    )
+
+    assert regressions == (
+        Regression(
+            name="alpha",
+            status="regression",
+            baseline_evaluation_id="base-alpha",
+            candidate_evaluation_id="candidate-alpha",
+        ),
+        Regression(
+            name="gamma",
+            status="missing-baseline",
+            candidate_evaluation_id="candidate-new",
+        ),
+    )
+    assert store.load_regression("comparison-1-0") == regressions[0]
+    assert store.load_regression("comparison-1-1") == regressions[1]
+    assert store.list_regressions() == list(regressions)
+
+
+def test_lab_regress_requires_preserved_evaluations(tmp_path: Path):
+    lab = Lab(FakeRuntime(), ArtifactStore(tmp_path))
+
+    with pytest.raises(FileNotFoundError):
+        lab.regress(
+            ("missing-baseline",),
+            ("missing-candidate",),
+            regression_id_prefix="missing",
+        )
