@@ -1,6 +1,6 @@
 # REQ-017 — Durable Evaluation Workflow
 
-**Status:** Proposed  
+**Status:** Complete  
 **Phase:** 2 — Experimentation  
 **Issue:** #36
 
