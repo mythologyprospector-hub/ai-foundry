@@ -115,7 +115,7 @@ The project will favor:
 
 **Phase 2 — Experimentation foundation established.**
 
-The initial laboratory loop and the core experimentation foundation are complete through **REQ-018**. AI Foundry now has explicit, durable contracts for experiments, datasets, runs, results, evaluations, comparisons, regressions, provenance, and their reference integrity.
+The initial laboratory loop and the core experimentation foundation are complete through **REQ-020**. AI Foundry now has explicit, durable contracts for experiments, datasets, runs, results, evaluations, comparisons, regressions, provenance, and their reference integrity.
 
 The current implementation supports:
 
@@ -126,6 +126,7 @@ The current implementation supports:
 - artifact reference-integrity enforcement
 - explicit durable evaluation through the Lab
 - direct provenance inspection of a preserved Run
+- dataset/test-case provenance preserved on dataset-driven Runs
 
 The repository remains intentionally small and local-first. The next capabilities should be driven by inspection of the completed system and demonstrated engineering pressure rather than by speculative architecture.
 
