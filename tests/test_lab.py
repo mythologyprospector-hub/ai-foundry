@@ -600,6 +600,11 @@ def test_evaluator_reports_regressions_and_missing_names_deterministically(tmp_p
             status="missing-baseline",
             candidate_evaluation_id="candidate-new",
         ),
+        Regression(
+            name="stable",
+            status="missing-candidate",
+            baseline_evaluation_id="base-stable",
+        ),
     )
 
 
