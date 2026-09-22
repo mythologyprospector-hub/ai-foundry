@@ -1,6 +1,6 @@
 # REQ-018 — Provenance Inspection
 
-**Status:** Proposed  
+**Status:** Complete  
 **Phase:** 2 — Experimentation  
 **Issue:** #38
 
