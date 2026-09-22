@@ -113,11 +113,23 @@ The project will favor:
 
 ## Current Status
 
-**Phase 2 — Experimentation is beginning.**
+**Phase 2 — Experimentation foundation established.**
 
-Phase 1's first laboratory loop is complete and has been verified with automated tests, GitHub Actions, and a live local Ollama run. The repository now moves into the experimentation phase, beginning with explicit experiment history and immutable artifact preservation.
+The initial laboratory loop and the core experimentation foundation are complete through **REQ-018**. AI Foundry now has explicit, durable contracts for experiments, datasets, runs, results, evaluations, comparisons, regressions, provenance, and their reference integrity.
 
-The implementation remains intentionally small. The long-term vision is broad, but capabilities will be added through verified, incremental requirements rather than speculative architecture.
+The current implementation supports:
+
+- repeated and dataset-driven runs
+- durable experiment/run/result/evaluation/comparison/regression artifacts
+- evaluation suites and explicit regression checks
+- preserved dataset inputs
+- artifact reference-integrity enforcement
+- explicit durable evaluation through the Lab
+- direct provenance inspection of a preserved Run
+
+The repository remains intentionally small and local-first. The next capabilities should be driven by inspection of the completed system and demonstrated engineering pressure rather than by speculative architecture.
+
+Phase 1's first laboratory loop was verified with automated tests, GitHub Actions, and a live local Ollama run. Phase 2 has continued through incremental, verified requirements with the same artifact-first and reproducibility constraints.
 
 ## Author
 
