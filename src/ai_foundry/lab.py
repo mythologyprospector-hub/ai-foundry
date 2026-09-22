@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from .contracts import Dataset, Evaluation, Experiment, Result, Run, RunProvenance, utc_now
+from .contracts import Comparison, Dataset, Evaluation, Experiment, Result, Run, RunProvenance, utc_now
 from .evaluation import Evaluator
 from .runtime import RuntimeAdapter
 from .store import ArtifactStore
@@ -37,6 +37,24 @@ class Lab:
         )
         self.store.save_evaluation(evaluation)
         return evaluation
+
+    def compare(
+        self,
+        run_ids: tuple[str, ...],
+        *,
+        comparison_id: str,
+        note: str = "",
+        metadata: dict | None = None,
+    ) -> Comparison:
+        """Create and durably preserve a comparison of existing runs."""
+        comparison = Comparison(
+            comparison_id=comparison_id,
+            run_ids=run_ids,
+            note=note,
+            metadata={} if metadata is None else metadata,
+        )
+        self.store.save_comparison(comparison)
+        return comparison
 
     def inspect_provenance(self, run_id: str) -> RunProvenance:
         """Inspect a preserved run, its result, and linked evaluations."""
