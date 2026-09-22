@@ -68,7 +68,12 @@ class Lab:
         self.store.save_experiment(experiment)
         self.store.save_dataset(dataset)
         return tuple(
-            self._run(experiment, prompt=case.input)
+            self._run(
+                experiment,
+                prompt=case.input,
+                dataset_id=dataset.dataset_id,
+                test_case_id=case.test_case_id,
+            )
             for case in dataset.test_cases
         )
 
@@ -82,7 +87,14 @@ class Lab:
         self.store.save_experiment(experiment)
         return self._run(experiment)
 
-    def _run(self, experiment: Experiment, *, prompt: str | None = None) -> tuple[Run, Result]:
+    def _run(
+        self,
+        experiment: Experiment,
+        *,
+        prompt: str | None = None,
+        dataset_id: str | None = None,
+        test_case_id: str | None = None,
+    ) -> tuple[Run, Result]:
         run_id = uuid4().hex
         started_at = utc_now()
         output = self.runtime.generate(
@@ -93,6 +105,15 @@ class Lab:
         finished_at = utc_now()
 
         runtime_type = type(self.runtime)
+        provenance = {
+            "runtime_adapter": runtime_type.__qualname__,
+            "runtime_module": runtime_type.__module__,
+        }
+        if dataset_id is not None:
+            provenance["dataset_id"] = dataset_id
+        if test_case_id is not None:
+            provenance["test_case_id"] = test_case_id
+
         run = Run(
             run_id=run_id,
             experiment_id=experiment.experiment_id,
@@ -103,10 +124,7 @@ class Lab:
                 "prompt": experiment.prompt if prompt is None else prompt,
                 "parameters": dict(experiment.parameters),
             },
-            provenance={
-                "runtime_adapter": runtime_type.__qualname__,
-                "runtime_module": runtime_type.__module__,
-            },
+            provenance=provenance,
         )
         result = Result(run_id=run_id, output=output)
         self.store.save_run(run)

@@ -814,3 +814,30 @@ def test_lab_compare_rejects_missing_run_reference(tmp_path: Path):
             ("missing-run",),
             comparison_id="missing-run-comparison",
         )
+
+
+def test_lab_dataset_run_preserves_dataset_and_test_case_provenance(tmp_path: Path):
+    store = ArtifactStore(tmp_path)
+    lab = Lab(FakeRuntime(), store)
+    dataset = Dataset(
+        "provenance-dataset",
+        (DatasetTestCase("case-a", "first"),),
+    )
+
+    run, _ = lab.run_dataset(
+        Experiment("dataset-provenance", "fake-model", "unused"),
+        dataset,
+    )[0]
+
+    assert run.provenance["dataset_id"] == "provenance-dataset"
+    assert run.provenance["test_case_id"] == "case-a"
+    assert store.load_dataset("provenance-dataset") == dataset
+
+
+def test_lab_ordinary_run_has_no_dataset_test_case_provenance(tmp_path: Path):
+    lab = Lab(FakeRuntime(), ArtifactStore(tmp_path))
+
+    run, _ = lab.run(Experiment("ordinary-provenance", "fake-model", "hello"))
+
+    assert "dataset_id" not in run.provenance
+    assert "test_case_id" not in run.provenance
